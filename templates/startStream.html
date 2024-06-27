@@ -7,8 +7,62 @@
 </head>
 <body>
     <h1>Start Stream</h1>
-    <form action="/start_stream" method="post">
-        <button type="submit">Start Stream</button>
-    </form>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button onclick="startStream()">Start Stream</button>
+    <p id="stream-id"></p>
+
+    <script>
+        const video = document.getElementById('video');
+
+        // Запит доступу до камери
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                window.localStream = stream; // Зберігаємо стрім для подальшого використання
+            })
+            .catch(error => {
+                console.error('Error accessing camera: ', error);
+            });
+
+        async function startStream() {
+            const response = await fetch('/start_stream', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            const streamId = data.uuid;
+            document.getElementById('stream-id').innerText = 'Stream ID: ' + streamId;
+
+            const peerConnection = new RTCPeerConnection();
+            window.localStream.getTracks().forEach(track => peerConnection.addTrack(track, window.localStream));
+
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    fetch('/ice_candidate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(event.candidate)
+                    });
+                }
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            const responseSDP = await fetch('/offer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sdp: peerConnection.localDescription,
+                    streamId: streamId
+                })
+            });
+            const answerSDP = await responseSDP.json();
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answerSDP));
+        }
+    </script>
 </body>
 </html>
