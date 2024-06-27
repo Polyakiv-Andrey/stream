@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Stream</title>
+</head>
+<body>
+    <h1>View Stream</h1>
+    <form id="viewForm">
+        <label for="user_id">Stream UUID:</label>
+        <input type="text" id="user_id" name="user_id" required>
+        <button type="submit">View Stream</button>
+    </form>
+    <img id="stream" src="" alt="Stream not available">
+    <script>
+        document.getElementById('viewForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var userId = document.getElementById('user_id').value;
+            var img = document.getElementById('stream');
+            img.src = '/video_feed/' + userId;
+            img.onerror = function() {
+                console.error("Error loading stream");
+            };
+            img.onload = function() {
+                console.log("Stream loaded successfully");
+            };
+        });
+    </script>
+</body>
+</html>
