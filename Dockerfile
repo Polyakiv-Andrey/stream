@@ -1,20 +1,24 @@
 FROM python:3.9-slim
 
-RUN apt-get update && apt-get install -y \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libglib2.0-0 \
-    libgl1-mesa-glx
+# Install necessary packages
+RUN apt-get update && \
+    apt-get install -y gcc libssl-dev && \
+    apt-get clean
 
+# Set work directory
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
+# Copy requirements file
+COPY requirements.txt .
 
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy application code
 COPY . .
 
+# Expose port
 EXPOSE 5000
 
+# Run the application
 CMD ["python", "app.py"]

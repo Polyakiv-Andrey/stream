@@ -172,7 +172,6 @@
 #     #
 #     # eventlet.monkey_patch()
 #     # socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -180,6 +179,7 @@ import requests
 import uuid
 from flasgger import Swagger, swag_from
 import os
+import ssl
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://127.0.0.1:5000", "http://localhost:5000"]}})
@@ -197,6 +197,9 @@ headers = {
     'Content-Type': 'application/json'
 }
 
+# Create an unverified SSL context
+ssl_context = ssl._create_unverified_context()
+
 @app.route('/start-stream', methods=['POST'])
 @swag_from('swagger.yaml', endpoint='start-stream')
 def start_stream():
@@ -211,7 +214,8 @@ def start_stream():
                 "name": stream_name,
                 "public": False,
                 "record": True
-            }
+            },
+            verify=False  # Disable SSL verification
         )
 
         if response.status_code == 201:
@@ -232,7 +236,8 @@ def stop_stream(stream_id):
     try:
         response = requests.delete(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
-            headers=headers
+            headers=headers,
+            verify=False  # Disable SSL verification
         )
 
         if response.status_code == 204:
