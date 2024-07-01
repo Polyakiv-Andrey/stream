@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Streams</title>
+</head>
+<body>
+    <h1>Live Streams</h1>
+    <ul>
+        {% for stream in streams %}
+        <li>
+            <a href="{{ url_for('watch_stream_page', stream_id=stream['liveStreamId']) }}">{{ stream['name'] }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
