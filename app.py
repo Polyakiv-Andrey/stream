@@ -160,8 +160,8 @@ def handle_stop_stream(data):
         emit('error', {"error": "An error occurred while stopping the stream", "details": str(e)})
 
 if __name__ == '__main__':
-    # socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-    import eventlet
-
-    eventlet.monkey_patch()
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    # import eventlet
+    #
+    # eventlet.monkey_patch()
+    # socketio.run(app, debug=True, host='0.0.0.0', port=5000)
