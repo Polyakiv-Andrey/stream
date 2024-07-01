@@ -177,4 +177,4 @@ def watch_stream_page(stream_id):
         return render_template('error.html', message="Failed to load stream")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
