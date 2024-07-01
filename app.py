@@ -32,6 +32,7 @@ def start_stream():
         response = requests.post(
             f'{API_VIDEO_BASE_URL}/live-streams',
             headers=headers,
+            verify=False,
             json={
                 "name": stream_name,
                 "public": False,
@@ -57,7 +58,8 @@ def stop_stream(stream_id):
     try:
         response = requests.delete(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
-            headers=headers
+            headers=headers,
+            verify = False
         )
 
         if response.status_code == 204:
@@ -73,7 +75,8 @@ def list_streams():
     try:
         response = requests.get(
             f'{API_VIDEO_BASE_URL}/live-streams',
-            headers=headers
+            headers=headers,
+            verify=False
         )
 
         if response.status_code == 200:
@@ -90,7 +93,8 @@ def streams_page():
     try:
         response = requests.get(
             f'{API_VIDEO_BASE_URL}/live-streams',
-            headers=headers
+            headers=headers,
+            verify=False
         )
 
         if response.status_code == 200:
@@ -107,7 +111,8 @@ def watch_stream_page(stream_id):
     try:
         response = requests.get(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
-            headers=headers
+            headers=headers,
+            verify=False
         )
 
         if response.status_code == 200:
@@ -127,6 +132,7 @@ def handle_start_stream(data):
         response = requests.post(
             f'{API_VIDEO_BASE_URL}/live-streams',
             headers=headers,
+            verify=False,
             json={
                 "name": stream_name,
                 "public": False,
@@ -149,7 +155,8 @@ def handle_stop_stream(data):
         stream_id = data.get('stream_id')
         response = requests.delete(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
-            headers=headers
+            headers=headers,
+            verify=False
         )
 
         if response.status_code == 204:
