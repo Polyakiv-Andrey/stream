@@ -169,7 +169,7 @@ import os
 import ssl
 import urllib3
 
-# Подавление предупреждений о неподтвержденных HTTPS-запросах
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
@@ -190,8 +190,9 @@ headers = {
 
 ssl_context = ssl._create_unverified_context()
 
-# Хранилище зарегистрированных устройств
-registered_devices = set()
+# Хранилище зарегистрированных устройств и стримов
+registered_devices = {}
+streams = {}
 
 
 @app.route('/register', methods=['POST'])
@@ -203,7 +204,7 @@ def register_device():
         return jsonify({"error": "device_id is required"}), 400
 
     if device_id not in registered_devices:
-        registered_devices.add(device_id)
+        registered_devices[device_id] = None
         return jsonify({"status": "device registered"}), 201
     else:
         return jsonify({"status": "device already registered"}), 200
@@ -213,6 +214,12 @@ def register_device():
 @swag_from('swagger.yaml', endpoint='start-stream')
 def start_stream():
     try:
+        data = request.json
+        device_id = data.get('device_id')
+
+        if device_id not in registered_devices:
+            return jsonify({"error": "Device not registered"}), 400
+
         stream_uuid = str(uuid.uuid4())
         stream_name = f'stream-{stream_uuid}'
 
@@ -229,7 +236,7 @@ def start_stream():
 
         if response.status_code == 201:
             stream_data = response.json()
-            stream_data["stream_uuid"] = stream_uuid
+            streams[device_id] = stream_data
             return jsonify({
                 "status": "stream started",
                 "stream_data": stream_data
@@ -240,10 +247,17 @@ def start_stream():
         return jsonify({"error": "An error occurred while starting the stream", "details": str(e)}), 500
 
 
-@app.route('/stop-stream/<stream_id>', methods=['POST'])
+@app.route('/stop-stream', methods=['POST'])
 @swag_from('swagger.yaml', endpoint='stop-stream')
-def stop_stream(stream_id):
+def stop_stream():
     try:
+        data = request.json
+        device_id = data.get('device_id')
+
+        if device_id not in registered_devices or device_id not in streams:
+            return jsonify({"error": "Device not registered or no stream found"}), 400
+
+        stream_id = streams[device_id]['liveStreamId']
         response = requests.delete(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
             headers=headers,
@@ -251,6 +265,7 @@ def stop_stream(stream_id):
         )
 
         if response.status_code == 204:
+            streams.pop(device_id, None)
             return jsonify({"status": "stream stopped"})
         else:
             return jsonify({"error": "Failed to stop stream", "details": response.json()}), response.status_code
@@ -296,10 +311,10 @@ def streams_page():
         return render_template('error.html', message=str(e))
 
 
-@app.route('/watch-stream/<stream_id>', methods=['GET'])
+@app.route('/watch-stream/<device_id>', methods=['GET'])
 @swag_from('swagger.yaml', endpoint='watch-stream-page')
-def watch_stream_page(stream_id):
-    return render_template('watch.html', stream_id=stream_id)
+def watch_stream_page(device_id):
+    return render_template('watch.html', device_id=device_id)
 
 
 @socketio.on('transmit_stream')
@@ -310,18 +325,12 @@ def handle_transmit_stream(data):
             emit('error', {"error": "Device not registered"})
             return
 
-        stream_id = data.get('stream_id')
-        response = requests.get(
-            f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
-            headers=headers,
-            verify=False
-        )
+        if device_id not in streams:
+            emit('error', {"error": "No stream found for this device"})
+            return
 
-        if response.status_code == 200:
-            stream_data = response.json()
-            emit('stream_data', stream_data)
-        else:
-            emit('error', {"error": "Failed to load stream", "details": response.json()})
+        stream_data = streams[device_id]
+        emit('stream_data', stream_data)
     except requests.exceptions.RequestException as e:
         emit('error', {"error": "An error occurred while transmitting the stream", "details": str(e)})
 
