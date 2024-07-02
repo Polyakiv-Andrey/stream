@@ -174,7 +174,7 @@
 #     # socketio.run(app, debug=True, host='0.0.0.0', port=5000)
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
+# from flask_socketio import SocketIO, emit
 import requests
 import uuid
 from flasgger import Swagger, swag_from
@@ -183,7 +183,7 @@ import ssl
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://127.0.0.1:5000", "http://localhost:5000"]}})
-socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5000", "http://localhost:5000"])
+# socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5000", "http://localhost:5000"])
 
 swagger_file_path = os.path.join(os.path.dirname(__file__), 'swagger.yaml')
 swagger = Swagger(app, template_file=swagger_file_path)
@@ -197,7 +197,6 @@ headers = {
     'Content-Type': 'application/json'
 }
 
-# Create an unverified SSL context
 ssl_context = ssl._create_unverified_context()
 
 @app.route('/start-stream', methods=['POST'])
@@ -215,7 +214,7 @@ def start_stream():
                 "public": False,
                 "record": True
             },
-            verify=False  # Disable SSL verification
+            verify=False
         )
 
         if response.status_code == 201:
@@ -237,7 +236,7 @@ def stop_stream(stream_id):
         response = requests.delete(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
             headers=headers,
-            verify=False  # Disable SSL verification
+            verify=False
         )
 
         if response.status_code == 204:
@@ -254,7 +253,7 @@ def list_streams():
         response = requests.get(
             f'{API_VIDEO_BASE_URL}/live-streams',
             headers=headers,
-            verify=False  # Disable SSL verification
+            verify=False
         )
 
         if response.status_code == 200:
@@ -272,7 +271,7 @@ def streams_page():
         response = requests.get(
             f'{API_VIDEO_BASE_URL}/live-streams',
             headers=headers,
-            verify=False  # Disable SSL verification
+            verify=False
         )
 
         if response.status_code == 200:
@@ -290,7 +289,7 @@ def watch_stream_page(stream_id):
         response = requests.get(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
             headers=headers,
-            verify=False  # Disable SSL verification
+            verify=False
         )
 
         if response.status_code == 200:
@@ -301,50 +300,51 @@ def watch_stream_page(stream_id):
     except requests.exceptions.RequestException as e:
         return render_template('error.html', message=str(e))
 
-@socketio.on('start_stream')
-def handle_start_stream(data):
-    try:
-        stream_uuid = str(uuid.uuid4())
-        stream_name = f'stream-{stream_uuid}'
+# @socketio.on('start_stream')
+# def handle_start_stream(data):
+#     try:
+#         stream_uuid = str(uuid.uuid4())
+#         stream_name = f'stream-{stream_uuid}'
 
-        response = requests.post(
-            f'{API_VIDEO_BASE_URL}/live-streams',
-            headers=headers,
-            json={
-                "name": stream_name,
-                "public": False,
-                "record": True
-            },
-            verify=False  # Disable SSL verification
-        )
+#         response = requests.post(
+#             f'{API_VIDEO_BASE_URL}/live-streams',
+#             headers=headers,
+#             json={
+#                 "name": stream_name,
+#                 "public": False,
+#                 "record": True
+#             },
+#             verify=False
+#         )
 
-        if response.status_code == 201:
-            stream_data = response.json()
-            stream_data["stream_uuid"] = stream_uuid
-            emit('stream_started', stream_data)
-        else:
-            emit('error', {"error": "Failed to start stream", "details": response.json()})
-    except requests.exceptions.RequestException as e:
-        emit('error', {"error": "An error occurred while starting the stream", "details": str(e)})
+#         if response.status_code == 201:
+#             stream_data = response.json()
+#             stream_data["stream_uuid"] = stream_uuid
+#             emit('stream_started', stream_data)
+#         else:
+#             emit('error', {"error": "Failed to start stream", "details": response.json()})
+#     except requests.exceptions.RequestException as e:
+#         emit('error', {"error": "An error occurred while starting the stream", "details": str(e)})
 
-@socketio.on('stop_stream')
-def handle_stop_stream(data):
-    try:
-        stream_id = data.get('stream_id')
-        response = requests.delete(
-            f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
-            headers=headers,
-            verify=False  # Disable SSL verification
-        )
+# @socketio.on('stop_stream')
+# def handle_stop_stream(data):
+#     try:
+#         stream_id = data.get('stream_id')
+#         response = requests.delete(
+#             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
+#             headers=headers,
+#             verify=False
+#         )
 
-        if response.status_code == 204:
-            emit('stream_stopped', {"status": "stream stopped"})
-        else:
-            emit('error', {"error": "Failed to stop stream", "details": response.json()})
-    except requests.exceptions.RequestException as e:
-        emit('error', {"error": "An error occurred while stopping the stream", "details": str(e)})
+#         if response.status_code == 204:
+#             emit('stream_stopped', {"status": "stream stopped"})
+#         else:
+#             emit('error', {"error": "Failed to stop stream", "details": response.json()})
+#     except requests.exceptions.RequestException as e:
+#         emit('error', {"error": "An error occurred while stopping the stream", "details": str(e)})
 
 if __name__ == '__main__':
-    import eventlet
-    eventlet.monkey_patch()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
+    # import eventlet
+    # eventlet.monkey_patch()
+    # socketio.run(app, debug=True, host='0.0.0.0', port=5000)
