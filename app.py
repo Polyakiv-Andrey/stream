@@ -169,6 +169,7 @@ import os
 import ssl
 import urllib3
 
+# Подавление предупреждений о неподтвержденных HTTPS-запросах
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)

@@ -13,6 +13,7 @@ Flask-Cors==4.0.1
 Flask-SocketIO==5.3.6
 future==1.0.0
 greenlet==3.0.3
+gunicorn==22.0.0
 h11==0.14.0
 idna==3.7
 itsdangerous==2.2.0
