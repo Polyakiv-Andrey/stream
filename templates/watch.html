@@ -4,12 +4,29 @@
     <title>Watch Stream</title>
 </head>
 <body>
-    <h1>Watching Stream: {{ stream['name'] }}</h1>
+    <h1>Watching Stream: {{ stream_id }}</h1>
     <div>
-        <video controls autoplay>
-            <source src="{{ stream['assets']['hls'] }}" type="application/x-mpegURL">
+        <video id="live-stream" controls autoplay>
             Your browser does not support the video tag.
         </video>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script>
+        var socket = io();
+        var streamId = "{{ stream_id }}";
+
+        socket.on('connect', function() {
+            socket.emit('transmit_stream', { stream_id: streamId });
+        });
+
+        socket.on('stream_data', function(data) {
+            var videoElement = document.getElementById('live-stream');
+            videoElement.src = data.assets.hls;
+        });
+
+        socket.on('error', function(error) {
+            console.error('Error: ', error);
+        });
+    </script>
 </body>
 </html>
