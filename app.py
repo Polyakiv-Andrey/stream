@@ -184,11 +184,30 @@ API_VIDEO_BASE_URL = 'https://ws.api.video'
 
 headers = {
     'Accept': 'application/json',
-    'Authorization': f'Bearer {API_VIDEO_KEY}',
+    'Authorization': f'Bearer ' + API_VIDEO_KEY,
     'Content-Type': 'application/json'
 }
 
 ssl_context = ssl._create_unverified_context()
+
+# Хранилище зарегистрированных устройств
+registered_devices = set()
+
+
+@app.route('/register', methods=['POST'])
+def register_device():
+    data = request.json
+    device_id = data.get('device_id')
+
+    if not device_id:
+        return jsonify({"error": "device_id is required"}), 400
+
+    if device_id not in registered_devices:
+        registered_devices.add(device_id)
+        return jsonify({"status": "device registered"}), 201
+    else:
+        return jsonify({"status": "device already registered"}), 200
+
 
 @app.route('/start-stream', methods=['POST'])
 @swag_from('swagger.yaml', endpoint='start-stream')
@@ -220,6 +239,7 @@ def start_stream():
     except requests.exceptions.RequestException as e:
         return jsonify({"error": "An error occurred while starting the stream", "details": str(e)}), 500
 
+
 @app.route('/stop-stream/<stream_id>', methods=['POST'])
 @swag_from('swagger.yaml', endpoint='stop-stream')
 def stop_stream(stream_id):
@@ -236,6 +256,7 @@ def stop_stream(stream_id):
             return jsonify({"error": "Failed to stop stream", "details": response.json()}), response.status_code
     except requests.exceptions.RequestException as e:
         return jsonify({"error": "An error occurred while stopping the stream", "details": str(e)}), 500
+
 
 @app.route('/list-streams', methods=['GET'])
 @swag_from('swagger.yaml', endpoint='list-streams')
@@ -255,6 +276,7 @@ def list_streams():
     except requests.exceptions.RequestException as e:
         return jsonify({"error": "An error occurred while listing the streams", "details": str(e)}), 500
 
+
 @app.route('/streams', methods=['GET'])
 @swag_from('swagger.yaml', endpoint='streams-page')
 def streams_page():
@@ -273,14 +295,21 @@ def streams_page():
     except requests.exceptions.RequestException as e:
         return render_template('error.html', message=str(e))
 
+
 @app.route('/watch-stream/<stream_id>', methods=['GET'])
 @swag_from('swagger.yaml', endpoint='watch-stream-page')
 def watch_stream_page(stream_id):
     return render_template('watch.html', stream_id=stream_id)
 
+
 @socketio.on('transmit_stream')
 def handle_transmit_stream(data):
     try:
+        device_id = data.get('device_id')
+        if device_id not in registered_devices:
+            emit('error', {"error": "Device not registered"})
+            return
+
         stream_id = data.get('stream_id')
         response = requests.get(
             f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
@@ -296,7 +325,9 @@ def handle_transmit_stream(data):
     except requests.exceptions.RequestException as e:
         emit('error', {"error": "An error occurred while transmitting the stream", "details": str(e)})
 
+
 if __name__ == '__main__':
     import eventlet
+
     eventlet.monkey_patch()
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
