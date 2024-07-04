@@ -8,6 +8,9 @@ RUN apt-get update && \
 # Set work directory
 WORKDIR /app
 
+# Ensure the working directory exists and is writable
+RUN mkdir -p /app && chmod -R 755 /app
+
 # Copy requirements file
 COPY requirements.txt .
 
