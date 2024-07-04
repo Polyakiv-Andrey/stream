@@ -10,6 +10,7 @@ ffmpeg-python==0.2.0
 flasgger==0.9.7.1
 Flask==3.0.3
 Flask-Cors==4.0.1
+flask-sock==0.7.0
 Flask-SocketIO==5.3.6
 future==1.0.0
 greenlet==3.0.3
