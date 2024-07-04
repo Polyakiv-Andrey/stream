@@ -1,6 +1,6 @@
 # from flask import Flask, request, jsonify, render_template
 # from flask_cors import CORS
-# from flask_socketio import SocketIO, emit
+# from flask_socketio import SocketIO, emit, disconnect
 # import requests
 # import uuid
 # from flasgger import Swagger, swag_from
@@ -8,12 +8,12 @@
 # import ssl
 # import urllib3
 #
-#
 # urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 #
 # app = Flask(__name__)
 # CORS(app, resources={r"/*": {"origins": ["http://127.0.0.1:5000", "http://localhost:5000"]}})
-# socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5000", "http://localhost:5000"])
+# socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5000", "http://localhost:5000"], logger=True,
+#                     engineio_logger=True)
 #
 # swagger_file_path = os.path.join(os.path.dirname(__file__), 'swagger.yaml')
 # swagger = Swagger(app, template_file=swagger_file_path)
@@ -156,34 +156,34 @@
 #     return render_template('watch.html', device_id=device_id)
 #
 #
-# @socketio.on('transmit_stream')
-# def handle_transmit_stream(data):
-#     try:
-#         device_id = data.get('device_id')
-#         if device_id not in registered_devices:
-#             emit('error', {"error": "Device not registered"})
-#             return
+# @socketio.on('connect')
+# def handle_connect():
+#     path = request.args.get('path')
+#     device_id = path.strip('/')
 #
-#         if device_id not in streams:
-#             emit('error', {"error": "No stream found for this device"})
-#             return
+#     if device_id not in registered_devices:
+#         emit('error', {"error": "Device not registered"})
+#         disconnect()
+#         return
 #
-#         stream_data = streams[device_id]
-#         emit('stream_data', stream_data)
-#     except requests.exceptions.RequestException as e:
-#         emit('error', {"error": "An error occurred while transmitting the stream", "details": str(e)})
+#     if device_id not in streams:
+#         emit('error', {"error": "No stream found for this device"})
+#         disconnect()
+#         return
+#
+#     stream_data = streams[device_id]
+#     emit('stream_data', stream_data)
+#     print(f"WebSocket connected: {device_id}")
 #
 #
 # if __name__ == '__main__':
 #     import eventlet
-#
 #     eventlet.monkey_patch()
 #     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-
-
+import json
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit, disconnect
+from flask_sock import Sock
 import requests
 import uuid
 from flasgger import Swagger, swag_from
@@ -191,13 +191,11 @@ import os
 import ssl
 import urllib3
 
-# Подавление предупреждений о неподтвержденных HTTPS-запросах
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://127.0.0.1:5000", "http://localhost:5000"]}})
-socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5000", "http://localhost:5000"], logger=True,
-                    engineio_logger=True)
+CORS(app, resources={r"/*": {"origins": "*"}})
+sock = Sock(app)
 
 swagger_file_path = os.path.join(os.path.dirname(__file__), 'swagger.yaml')
 swagger = Swagger(app, template_file=swagger_file_path)
@@ -213,9 +211,8 @@ headers = {
 
 ssl_context = ssl._create_unverified_context()
 
-# Хранилище зарегистрированных устройств и стримов
-registered_devices = {}
-streams = {}
+registered_devices = {"1341234"}
+streams = {"1341234": {"liveStreamId": "test_stream_id", "other_data": "test_data"}}
 
 
 @app.route('/register', methods=['POST'])
@@ -227,7 +224,7 @@ def register_device():
         return jsonify({"error": "device_id is required"}), 400
 
     if device_id not in registered_devices:
-        registered_devices[device_id] = None
+        registered_devices.add(device_id)
         return jsonify({"status": "device registered"}), 201
     else:
         return jsonify({"status": "device already registered"}), 200
@@ -340,27 +337,24 @@ def watch_stream_page(device_id):
     return render_template('watch.html', device_id=device_id)
 
 
-@socketio.on('connect')
-def handle_connect():
-    path = request.args.get('path')
-    device_id = path.strip('/')
-
+@sock.route('/<device_id>')
+def websocket(ws, device_id):
     if device_id not in registered_devices:
-        emit('error', {"error": "Device not registered"})
-        disconnect()
+        ws.send(json.dumps({"error": "Device not registered"}))
         return
 
     if device_id not in streams:
-        emit('error', {"error": "No stream found for this device"})
-        disconnect()
+        ws.send(json.dumps({"error": "No stream found for this device"}))
         return
 
     stream_data = streams[device_id]
-    emit('stream_data', stream_data)
+    ws.send(json.dumps(stream_data))
+    print(f"WebSocket connected: {device_id}")
+
+    while True:
+        data = ws.receive()
+        ws.send(f"Echo: {data}")
 
 
 if __name__ == '__main__':
-    import eventlet
-
-    eventlet.monkey_patch()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
