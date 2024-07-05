@@ -2,17 +2,70 @@
 <html>
 <head>
     <title>Watch Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        .video-container {
+            width: 80%;
+            margin: 20px 0;
+        }
+        video {
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            margin-top: 10px;
+        }
+        button, select {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        select {
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
     <h1>Watching Stream: {{ device_id }}</h1>
-    <div>
+    <div class="video-container">
         <video id="live-stream" controls autoplay>
             Your browser does not support the video tag.
         </video>
     </div>
-    <button onclick="startStream()">Start Stream</button>
-    <button onclick="stopStream()">Stop Stream</button>
-    <button onclick="setResolution('1080p')">Set Resolution to 1080p</button>
+    <div class="controls">
+        <button onclick="startStream()">Start Stream</button>
+        <button onclick="stopStream()">Stop Stream</button>
+        <select id="resolution-dropdown" onchange="setResolution()">
+            <option value="480p">480p</option>
+            <option value="720p">720p</option>
+            <option value="1080p">1080p</option>
+        </select>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
         var socket = io();
@@ -57,7 +110,8 @@
             sendControlCommand('stop');
         }
 
-        function setResolution(resolution) {
+        function setResolution() {
+            var resolution = document.getElementById('resolution-dropdown').value;
             sendControlCommand('resolution', { resolution: resolution });
         }
     </script>
