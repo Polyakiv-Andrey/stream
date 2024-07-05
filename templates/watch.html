@@ -10,23 +10,57 @@
             Your browser does not support the video tag.
         </video>
     </div>
+    <button onclick="startStream()">Start Stream</button>
+    <button onclick="stopStream()">Stop Stream</button>
+    <button onclick="setResolution('1080p')">Set Resolution to 1080p</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
         var socket = io();
         var deviceId = "{{ device_id }}";
 
         socket.on('connect', function() {
-            socket.emit('transmit_stream', { device_id: deviceId });
+            console.log('Connected to WebSocket');
         });
 
         socket.on('message', function(data) {
             var videoElement = document.getElementById('live-stream');
-            videoElement.src = window.URL.createObjectURL(new Blob([data], { type: 'video/mp4' }));
+            var message = JSON.parse(data);
+
+            if (message.type === 'video') {
+                videoElement.src = window.URL.createObjectURL(new Blob([message.data], { type: 'video/mp4' }));
+            } else if (message.type === 'control') {
+                console.log('Control message:', message.data);
+            } else {
+                console.error('Unknown message type:', message.type);
+            }
         });
 
         socket.on('error', function(error) {
-            console.error('Error: ', error);
+            console.error('WebSocket error:', error);
         });
+
+        function sendControlCommand(command, data) {
+            socket.send(JSON.stringify({
+                type: 'control',
+                data: {
+                    value: command,
+                    ...data
+                }
+            }));
+        }
+
+        function startStream() {
+            sendControlCommand('start');
+        }
+
+        function stopStream() {
+            sendControlCommand('stop');
+        }
+
+        function setResolution(resolution) {
+            sendControlCommand('resolution', { resolution: resolution });
+        }
     </script>
 </body>
 </html>
+
