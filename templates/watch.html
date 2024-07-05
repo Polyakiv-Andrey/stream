@@ -4,7 +4,7 @@
     <title>Watch Stream</title>
 </head>
 <body>
-    <h1>Watching Stream: {{ stream_id }}</h1>
+    <h1>Watching Stream: {{ device_id }}</h1>
     <div>
         <video id="live-stream" controls autoplay>
             Your browser does not support the video tag.
@@ -13,15 +13,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
         var socket = io();
-        var streamId = "{{ stream_id }}";
+        var deviceId = "{{ device_id }}";
 
         socket.on('connect', function() {
-            socket.emit('transmit_stream', { stream_id: streamId });
+            socket.emit('transmit_stream', { device_id: deviceId });
         });
 
-        socket.on('stream_data', function(data) {
+        socket.on('message', function(data) {
             var videoElement = document.getElementById('live-stream');
-            videoElement.src = data.assets.hls;
+            videoElement.src = window.URL.createObjectURL(new Blob([data], { type: 'video/mp4' }));
         });
 
         socket.on('error', function(error) {

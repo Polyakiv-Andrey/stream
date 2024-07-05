@@ -213,9 +213,8 @@ headers = {
 
 ssl_context = ssl._create_unverified_context()
 
-# File paths
+# File path
 REGISTERED_DEVICES_FILE = '/app/registered_devices.csv'
-STREAMS_FILE = '/app/streams.csv'
 
 def read_registered_devices():
     if not os.path.isfile(REGISTERED_DEVICES_FILE):
@@ -229,20 +228,7 @@ def write_registered_device(device_id):
         writer = csv.writer(file)
         writer.writerow([device_id])
 
-def read_streams():
-    if not os.path.isfile(STREAMS_FILE):
-        return {}
-    with open(STREAMS_FILE, mode='r') as file:
-        reader = csv.reader(file)
-        return {rows[0]: json.loads(rows[1]) for rows in reader}
-
-def write_stream_to_csv(device_id, stream_data):
-    with open(STREAMS_FILE, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([device_id, json.dumps(stream_data)])
-
 registered_devices = read_registered_devices()
-streams = read_streams()
 
 @app.route('/register', methods=['POST'])
 def register_device():
@@ -264,7 +250,7 @@ def register_device():
 @swag_from('swagger.yaml', endpoint='start-stream')
 def start_stream():
     try:
-        global registered_devices, streams
+        global registered_devices
         data = request.json
         device_id = data.get('device_id')
 
@@ -287,8 +273,6 @@ def start_stream():
 
         if response.status_code == 201:
             stream_data = response.json()
-            streams[device_id] = stream_data
-            write_stream_to_csv(device_id, stream_data)
             return jsonify({
                 "status": "stream started",
                 "stream_data": stream_data
@@ -302,46 +286,29 @@ def start_stream():
 @swag_from('swagger.yaml', endpoint='stop-stream')
 def stop_stream():
     try:
-        global streams, registered_devices
         data = request.json
         device_id = data.get('device_id')
 
-        if device_id not in registered_devices or device_id not in streams:
+        if device_id not in registered_devices:
             return jsonify({"error": "Device not registered or no stream found"}), 400
 
-        stream_id = streams[device_id]['liveStreamId']
-        response = requests.delete(
-            f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
-            headers=headers,
-            verify=False
-        )
+        stream_id = request.json.get('stream_id')
+        if stream_id:
+            response = requests.delete(
+                f'{API_VIDEO_BASE_URL}/live-streams/{stream_id}',
+                headers=headers,
+                verify=False
+            )
 
-        if response.status_code == 204:
-            streams.pop(device_id, None)
-            # write_streams_to_csv(streams)  # Update CSV after removing stream
-            return jsonify({"status": "stream stopped"})
+            if response.status_code == 204:
+                return jsonify({"status": "stream stopped"})
+            else:
+                return jsonify({"error": "Failed to stop stream", "details": response.json()}), response.status_code
         else:
-            return jsonify({"error": "Failed to stop stream", "details": response.json()}), response.status_code
+            return jsonify({"error": "No stream found for this device"}), 400
     except requests.exceptions.RequestException as e:
         return jsonify({"error": "An error occurred while stopping the stream", "details": str(e)}), 500
 
-@app.route('/list-streams', methods=['GET'])
-@swag_from('swagger.yaml', endpoint='list-streams')
-def list_streams():
-    try:
-        response = requests.get(
-            f'{API_VIDEO_BASE_URL}/live-streams',
-            headers=headers,
-            verify=False
-        )
-
-        if response.status_code == 200:
-            streams = response.json()
-            return jsonify(streams)
-        else:
-            return jsonify({"error": "Failed to list streams", "details": response.json()}), response.status_code
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": "An error occurred while listing the streams", "details": str(e)}), 500
 
 @app.route('/streams', methods=['GET'])
 @swag_from('swagger.yaml', endpoint='streams-page')
@@ -369,23 +336,16 @@ def watch_stream_page(device_id):
 @sock.route('/<device_id>')
 def websocket(ws, device_id):
     global registered_devices
-    global streams
     if device_id not in registered_devices:
         ws.send(json.dumps({"error": "Device not registered"}))
         return
 
-    # if device_id not in streams:
-    #     ws.send(json.dumps({"error": "No stream found for this device"}))
-    #     return
-
-    stream_data = streams[device_id]
-    ws.send(json.dumps(stream_data))
     print(f"WebSocket connected: {device_id}")
 
     while True:
         data = ws.receive()
-        ws.send(f"Echo: {data}")
-
+        if data:
+            ws.send(data)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
