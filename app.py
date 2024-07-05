@@ -318,7 +318,7 @@ def stop_stream():
 
         if response.status_code == 204:
             streams.pop(device_id, None)
-            write_streams_to_csv(streams)  # Update CSV after removing stream
+            # write_streams_to_csv(streams)  # Update CSV after removing stream
             return jsonify({"status": "stream stopped"})
         else:
             return jsonify({"error": "Failed to stop stream", "details": response.json()}), response.status_code
@@ -374,9 +374,9 @@ def websocket(ws, device_id):
         ws.send(json.dumps({"error": "Device not registered"}))
         return
 
-    if device_id not in streams:
-        ws.send(json.dumps({"error": "No stream found for this device"}))
-        return
+    # if device_id not in streams:
+    #     ws.send(json.dumps({"error": "No stream found for this device"}))
+    #     return
 
     stream_data = streams[device_id]
     ws.send(json.dumps(stream_data))
