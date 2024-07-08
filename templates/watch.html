@@ -84,7 +84,7 @@
             } else if (message.type === 'control') {
                 console.log('Control message:', message.data);
             } else {
-                console.error('Unknown message type:', message.type);
+                {#console.error('Unknown message type:', message.type);#}
             }
         };
 
