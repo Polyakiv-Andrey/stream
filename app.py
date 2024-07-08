@@ -20,7 +20,7 @@ API_VIDEO_BASE_URL = 'https://ws.api.video'
 
 headers = {
     'Accept': 'application/json',
-    'Authorization': f'Bearer ' + API_VIDEO_KEY,
+    'Authorization': 'Bearer ' + API_VIDEO_KEY,
     'Content-Type': 'application/json'
 }
 
