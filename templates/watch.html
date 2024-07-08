@@ -66,19 +66,17 @@
             <option value="1080p">1080p</option>
         </select>
     </div>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        var socket = io();
         var deviceId = "{{ device_id }}";
+        var ws = new WebSocket(`ws://${window.location.host}/${deviceId}`);
 
-        socket.on('connect', function() {
+        ws.onopen = function() {
             console.log('Connected to WebSocket');
-            socket.emit('register', { device_id: deviceId });
-        });
+        };
 
-        socket.on('message', function(data) {
+        ws.onmessage = function(event) {
             var videoElement = document.getElementById('live-stream');
-            var message = JSON.parse(data);
+            var message = JSON.parse(event.data);
 
             if (message.type === 'video') {
                 videoElement.src = window.URL.createObjectURL(new Blob([message.data], { type: 'video/mp4' }));
@@ -87,14 +85,14 @@
             } else {
                 console.error('Unknown message type:', message.type);
             }
-        });
+        };
 
-        socket.on('error', function(error) {
+        ws.onerror = function(error) {
             console.error('WebSocket error:', error);
-        });
+        };
 
         function sendControlCommand(command, data) {
-            socket.send(JSON.stringify({
+            ws.send(JSON.stringify({
                 type: 'control',
                 data: {
                     value: command,
