@@ -284,9 +284,9 @@ def websocket(ws, device_id):
 def start_stream(device_id):
     global registered_devices
     global streams
-
-    if device_id not in registered_devices:
-        return {"error": "Device not registered"}
+    print(registered_devices)
+    # if device_id not in registered_devices:
+    #     return {"error": "Device not registered"}
 
     stream_uuid = str(uuid.uuid4())
     stream_name = f'stream-{stream_uuid}'
