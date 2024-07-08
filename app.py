@@ -250,9 +250,9 @@ def register_device():
 def websocket(ws, device_id):
     global registered_devices
     global streams
-    if device_id not in registered_devices:
-        ws.send(json.dumps({"error": "Device not registered"}))
-        return
+    # if device_id not in registered_devices:
+    #     ws.send(json.dumps({"error": "Device not registered"}))
+    #     return
 
     print(f"WebSocket connected: {device_id}")
 
