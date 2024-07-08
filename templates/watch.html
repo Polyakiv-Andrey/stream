@@ -66,13 +66,14 @@
             <option value="1080p">1080p</option>
         </select>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         var socket = io();
         var deviceId = "{{ device_id }}";
 
         socket.on('connect', function() {
             console.log('Connected to WebSocket');
+            socket.emit('register', { device_id: deviceId });
         });
 
         socket.on('message', function(data) {
@@ -117,4 +118,3 @@
     </script>
 </body>
 </html>
-
