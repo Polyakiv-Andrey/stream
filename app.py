@@ -1,11 +1,9 @@
 # import json
-# import csv
 # from flask import Flask, request, jsonify, render_template
 # from flask_cors import CORS
 # from flask_sock import Sock
 # import requests
 # import uuid
-# import os
 # import ssl
 # import urllib3
 #
@@ -26,38 +24,20 @@
 #
 # ssl_context = ssl._create_unverified_context()
 #
-# REGISTERED_DEVICES_FILE = '/app/registered_devices.csv'
+# registered_devices = set()
 # streams = {}
-#
-# def read_registered_devices():
-#     if not os.path.isfile(REGISTERED_DEVICES_FILE):
-#         return set()
-#     with open(REGISTERED_DEVICES_FILE, mode='r') as file:
-#         reader = csv.reader(file)
-#         return set(row[0] for row in reader)
-#
-#
-# def write_registered_device(device_id):
-#     with open(REGISTERED_DEVICES_FILE, mode='a', newline='') as file:
-#         writer = csv.writer(file)
-#         writer.writerow([device_id])
-#
-#
-# registered_devices = read_registered_devices()
-#
 #
 # @app.route('/register', methods=['POST'])
 # def register_device():
 #     global registered_devices
 #     data = request.json
-#     device_id = data.get('device_id')
+#     device_id = str(data.get('device_id'))
 #
 #     if not device_id:
 #         return jsonify({"error": "device_id is required"}), 400
 #
 #     if device_id not in registered_devices:
 #         registered_devices.add(device_id)
-#         write_registered_device(device_id)
 #         return jsonify({"status": "device registered"}), 201
 #     else:
 #         return jsonify({"status": "device already registered"}), 200
@@ -101,9 +81,9 @@
 # def start_stream(device_id):
 #     global registered_devices
 #     global streams
-#
+#     print(registered_devices)
 #     if device_id not in registered_devices:
-#         return {"error": "Device not registered"}
+#         return {"error": f"Device not registered {registered_devices}"}
 #
 #     stream_uuid = str(uuid.uuid4())
 #     stream_name = f'stream-{stream_uuid}'
@@ -249,9 +229,10 @@ def register_device():
 def websocket(ws, device_id):
     global registered_devices
     global streams
-    # if device_id not in registered_devices:
-    #     ws.send(json.dumps({"error": "Device not registered"}))
-    #     return
+
+    if device_id not in registered_devices:
+        ws.send(json.dumps({"error": "Device not registered"}))
+        return
 
     print(f"WebSocket connected: {device_id}")
 
@@ -260,9 +241,16 @@ def websocket(ws, device_id):
         if not message:
             continue
 
-        message_data = json.loads(message)
+        try:
+            message_data = json.loads(message)
+        except json.JSONDecodeError:
+            ws.send(json.dumps({"error": "Invalid JSON format"}))
+            continue
+
         msg_type = message_data.get('type')
         msg_data = message_data.get('data', {})
+
+        print(f"Received message: {message_data}")
 
         if msg_type == 'control':
             command = msg_data.get('value')
@@ -283,7 +271,7 @@ def websocket(ws, device_id):
 def start_stream(device_id):
     global registered_devices
     global streams
-    print(registered_devices)
+
     if device_id not in registered_devices:
         return {"error": f"Device not registered {registered_devices}"}
 
@@ -305,6 +293,7 @@ def start_stream(device_id):
         if response.status_code == 201:
             stream_data = response.json()
             streams[device_id] = stream_data['liveStreamId']
+            print(f"Stream started: {stream_data}")
             return {
                 "status": "stream started",
                 "stream_data": stream_data
@@ -335,6 +324,7 @@ def stop_stream(device_id):
 
         if response.status_code == 204:
             del streams[device_id]
+            print(f"Stream stopped for device: {device_id}")
             return {"status": "stream stopped"}
         else:
             return {"error": "Failed to stop stream", "details": response.json()}
@@ -352,6 +342,7 @@ def set_resolution(ws, resolution):
             }
         }
         ws.send(json.dumps(message))
+        print(f"Resolution set to: {resolution}")
         return {"status": "resolution set", "resolution": resolution}
     except Exception as e:
         return {"error": "Failed to set resolution", "details": str(e)}
