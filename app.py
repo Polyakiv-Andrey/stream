@@ -226,7 +226,6 @@ headers = {
 
 ssl_context = ssl._create_unverified_context()
 
-# Global dictionaries to store registered devices and streams
 registered_devices = set()
 streams = {}
 
@@ -285,8 +284,8 @@ def start_stream(device_id):
     global registered_devices
     global streams
     print(registered_devices)
-    # if device_id not in registered_devices:
-    #     return {"error": "Device not registered"}
+    if device_id not in registered_devices:
+        return {"error": f"Device not registered {registered_devices}"}
 
     stream_uuid = str(uuid.uuid4())
     stream_name = f'stream-{stream_uuid}'
