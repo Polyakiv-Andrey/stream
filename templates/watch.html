@@ -77,6 +77,7 @@
         ws.onmessage = function(event) {
             var videoElement = document.getElementById('live-stream');
             var message = JSON.parse(event.data);
+            console.log('Received message:', message);
 
             if (message.type === 'video') {
                 videoElement.src = window.URL.createObjectURL(new Blob([message.data], { type: 'video/mp4' }));
@@ -89,6 +90,10 @@
 
         ws.onerror = function(error) {
             console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = function(event) {
+            console.log('WebSocket connection closed:', event);
         };
 
         function sendControlCommand(command, data) {
