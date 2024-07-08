@@ -233,7 +233,7 @@ streams = {}
 def register_device():
     global registered_devices
     data = request.json
-    device_id = data.get('device_id')
+    device_id = str(data.get('device_id'))
 
     if not device_id:
         return jsonify({"error": "device_id is required"}), 400
