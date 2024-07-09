@@ -26,10 +26,11 @@
 #
 # registered_devices = set()
 # streams = {}
+# websockets = {}
+#
 #
 # @app.route('/register', methods=['POST'])
 # def register_device():
-#     global registered_devices
 #     data = request.json
 #     device_id = str(data.get('device_id'))
 #
@@ -45,51 +46,62 @@
 #
 # @sock.route('/<device_id>')
 # def websocket(ws, device_id):
-#     global registered_devices
-#     global streams
+#     global registered_devices, streams, websockets
 #
 #     if device_id not in registered_devices:
 #         ws.send(json.dumps({"error": "Device not registered"}))
 #         return
 #
+#     if device_id not in websockets:
+#         websockets[device_id] = []
+#
+#     websockets[device_id].append(ws)
 #     print(f"WebSocket connected: {device_id}")
 #
-#     while True:
-#         message = ws.receive()
-#         if not message:
-#             continue
+#     try:
+#         while True:
+#             message = ws.receive()
+#             if not message:
+#                 continue
 #
-#         try:
-#             message_data = json.loads(message)
-#         except json.JSONDecodeError:
-#             ws.send(json.dumps({"error": "Invalid JSON format"}))
-#             continue
+#             try:
+#                 message_data = json.loads(message)
+#             except json.JSONDecodeError:
+#                 ws.send(json.dumps({"error": "Invalid JSON format"}))
+#                 continue
 #
-#         msg_type = message_data.get('type')
-#         msg_data = message_data.get('data', {})
+#             msg_type = message_data.get('type')
+#             msg_data = message_data.get('data', {})
 #
-#         print(f"Received message: {message_data}")
+#             print(f"Received message: {message_data}")
 #
-#         if msg_type == 'control':
-#             command = msg_data.get('value')
-#             if command == 'start':
-#                 response = start_stream(device_id)
-#             elif command == 'stop':
-#                 response = stop_stream(device_id)
-#             elif command == 'resolution':
-#                 response = set_resolution(ws, msg_data.get('resolution'))
+#             if msg_type == 'control':
+#                 command = msg_data.get('value')
+#                 if command == 'start':
+#                     response = start_stream(device_id)
+#                 elif command == 'stop':
+#                     response = stop_stream(device_id)
+#                 elif command == 'resolution':
+#                     response = set_resolution(device_id, msg_data.get('resolution'))
+#                 else:
+#                     response = {"error": "Unknown command"}
+#
+#                 broadcast_to_device(device_id, json.dumps(response))
 #             else:
-#                 response = {"error": "Unknown command"}
+#                 ws.send(json.dumps({"error": "Invalid message type"}))
+#     finally:
+#         websockets[device_id].remove(ws)
+#         if not websockets[device_id]:
+#             del websockets[device_id]
 #
-#             ws.send(json.dumps(response))
-#         else:
-#             ws.send(json.dumps({"error": "Invalid message type"}))
+#
+# def broadcast_to_device(device_id, message):
+#     if device_id in websockets:
+#         for ws in websockets[device_id]:
+#             ws.send(message)
 #
 #
 # def start_stream(device_id):
-#     global registered_devices
-#     global streams
-#
 #     if device_id not in registered_devices:
 #         return {"error": f"Device not registered {registered_devices}"}
 #
@@ -112,10 +124,11 @@
 #             stream_data = response.json()
 #             streams[device_id] = stream_data['liveStreamId']
 #             print(f"Stream started: {stream_data}")
-#             return {
-#                 "status": "stream started",
-#                 "stream_data": stream_data
-#             }
+#             # return {
+#             #     "status": "stream started",
+#             #     "stream_data": stream_data
+#             # }
+#             return {"type":"control","data":{"value":"start"}}
 #         else:
 #             return {"error": "Failed to start stream", "details": response.json()}
 #     except requests.exceptions.RequestException as e:
@@ -123,9 +136,6 @@
 #
 #
 # def stop_stream(device_id):
-#     global registered_devices
-#     global streams
-#
 #     if device_id not in registered_devices:
 #         return {"error": "Device not registered"}
 #
@@ -143,14 +153,15 @@
 #         if response.status_code == 204:
 #             del streams[device_id]
 #             print(f"Stream stopped for device: {device_id}")
-#             return {"status": "stream stopped"}
+#             # return {"status": "stream stopped"}
+#             return {"type": "control", "data": {"value": "stop"}}
 #         else:
 #             return {"error": "Failed to stop stream", "details": response.json()}
 #     except requests.exceptions.RequestException as e:
 #         return {"error": "An error occurred while stopping the stream", "details": str(e)}
 #
 #
-# def set_resolution(ws, resolution):
+# def set_resolution(device_id, resolution):
 #     try:
 #         message = {
 #             "type": "control",
@@ -159,9 +170,10 @@
 #                 "resolution": resolution
 #             }
 #         }
-#         ws.send(json.dumps(message))
+#         broadcast_to_device(device_id, json.dumps(message))
 #         print(f"Resolution set to: {resolution}")
-#         return {"status": "resolution set", "resolution": resolution}
+#         # return {"status": "resolution set", "resolution": resolution}
+#         return message
 #     except Exception as e:
 #         return {"error": "Failed to set resolution", "details": str(e)}
 #
@@ -269,15 +281,16 @@ def websocket(ws, device_id):
             print(f"Received message: {message_data}")
 
             if msg_type == 'control':
-                command = msg_data.get('value')
-                if command == 'start':
-                    response = start_stream(device_id)
-                elif command == 'stop':
+                action = msg_data.get('action')
+                settings = msg_data.get('settings', {})
+                if action == 'start':
+                    response = start_stream(device_id, settings)
+                elif action == 'stop':
                     response = stop_stream(device_id)
-                elif command == 'resolution':
-                    response = set_resolution(device_id, msg_data.get('resolution'))
+                elif action == 'resolution':
+                    response = set_resolution(device_id, settings.get('resolution'))
                 else:
-                    response = {"error": "Unknown command"}
+                    response = {"error": "Unknown action"}
 
                 broadcast_to_device(device_id, json.dumps(response))
             else:
@@ -294,7 +307,7 @@ def broadcast_to_device(device_id, message):
             ws.send(message)
 
 
-def start_stream(device_id):
+def start_stream(device_id, settings):
     if device_id not in registered_devices:
         return {"error": f"Device not registered {registered_devices}"}
 
@@ -317,11 +330,7 @@ def start_stream(device_id):
             stream_data = response.json()
             streams[device_id] = stream_data['liveStreamId']
             print(f"Stream started: {stream_data}")
-            # return {
-            #     "status": "stream started",
-            #     "stream_data": stream_data
-            # }
-            return {"type":"control","data":{"value":"start"}}
+            return {"type": "control", "data": {"action": "start", "settings": settings}}
         else:
             return {"error": "Failed to start stream", "details": response.json()}
     except requests.exceptions.RequestException as e:
@@ -346,8 +355,7 @@ def stop_stream(device_id):
         if response.status_code == 204:
             del streams[device_id]
             print(f"Stream stopped for device: {device_id}")
-            # return {"status": "stream stopped"}
-            return {"type": "control", "data": {"value": "stop"}}
+            return {"type": "control", "data": {"action": "stop"}}
         else:
             return {"error": "Failed to stop stream", "details": response.json()}
     except requests.exceptions.RequestException as e:
@@ -359,13 +367,12 @@ def set_resolution(device_id, resolution):
         message = {
             "type": "control",
             "data": {
-                "value": "resolution",
-                "resolution": resolution
+                "action": "resolution",
+                "value": resolution
             }
         }
         broadcast_to_device(device_id, json.dumps(message))
         print(f"Resolution set to: {resolution}")
-        # return {"status": "resolution set", "resolution": resolution}
         return message
     except Exception as e:
         return {"error": "Failed to set resolution", "details": str(e)}
