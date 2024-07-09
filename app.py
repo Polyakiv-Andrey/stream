@@ -282,13 +282,14 @@ def websocket(ws, device_id):
 
             if msg_type == 'control':
                 action = msg_data.get('action')
-                settings = msg_data.get('settings', {})
                 if action == 'start':
+                    settings = msg_data.get('settings', {})
                     response = start_stream(device_id, settings)
                 elif action == 'stop':
                     response = stop_stream(device_id)
                 elif action == 'resolution':
-                    response = set_resolution(device_id, settings.get('resolution'))
+                    resolution = msg_data.get('value')
+                    response = set_resolution(device_id, resolution)
                 else:
                     response = {"error": "Unknown action"}
 

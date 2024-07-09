@@ -226,7 +226,7 @@
                 type: 'control',
                 data: {
                     action: action,
-                    settings: settings
+                    ...settings
                 }
             });
             console.log('Sending command:', message);
@@ -235,7 +235,7 @@
 
         function startStream() {
             const resolution = document.getElementById('resolution-dropdown').value;
-            sendControlCommand('start', { resolution: resolution });
+            sendControlCommand('start', { settings: { resolution: resolution } });
         }
 
         function stopStream() {
@@ -249,3 +249,4 @@
     </script>
 </body>
 </html>
+
