@@ -382,18 +382,10 @@ def set_resolution(device_id, resolution):
 
 @app.route('/streams', methods=['GET'])
 def streams_page():
+    global registered_devices
     try:
-        response = requests.get(
-            f'{API_VIDEO_BASE_URL}/live-streams',
-            headers=headers,
-            verify=False
-        )
-
-        if response.status_code == 200:
-            stream = response.json().get('liveStreams', [])
-            return render_template('streams.html', streams=stream)
-        else:
-            return render_template('error.html', message="Failed to load streams")
+        streams_list = [{"device_id": device_id} for device_id in registered_devices]
+        return render_template('streams.html', streams=streams_list)
     except requests.exceptions.RequestException as e:
         return render_template('error.html', message=str(e))
 
