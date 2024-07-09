@@ -317,10 +317,11 @@ def start_stream(device_id):
             stream_data = response.json()
             streams[device_id] = stream_data['liveStreamId']
             print(f"Stream started: {stream_data}")
-            return {
-                "status": "stream started",
-                "stream_data": stream_data
-            }
+            # return {
+            #     "status": "stream started",
+            #     "stream_data": stream_data
+            # }
+            return {"type":"control","data":{"value":"start"}}
         else:
             return {"error": "Failed to start stream", "details": response.json()}
     except requests.exceptions.RequestException as e:
@@ -345,7 +346,8 @@ def stop_stream(device_id):
         if response.status_code == 204:
             del streams[device_id]
             print(f"Stream stopped for device: {device_id}")
-            return {"status": "stream stopped"}
+            # return {"status": "stream stopped"}
+            return {"type": "control", "data": {"value": "stop"}}
         else:
             return {"error": "Failed to stop stream", "details": response.json()}
     except requests.exceptions.RequestException as e:
@@ -363,7 +365,8 @@ def set_resolution(device_id, resolution):
         }
         broadcast_to_device(device_id, json.dumps(message))
         print(f"Resolution set to: {resolution}")
-        return {"status": "resolution set", "resolution": resolution}
+        # return {"status": "resolution set", "resolution": resolution}
+        return message
     except Exception as e:
         return {"error": "Failed to set resolution", "details": str(e)}
 
