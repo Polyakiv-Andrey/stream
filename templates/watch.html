@@ -198,7 +198,6 @@
             <option value="1080">1080p</option>
         </select>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         var deviceId = "{{ device_id }}";
         var ws = new WebSocket(`ws://${window.location.host}/${deviceId}`);
@@ -217,20 +216,9 @@
             } else if (message.type === 'control') {
                 if (message.data.action === 'start') {
                     console.log('Stream Key:', message.data.settings.streamKey);
-                    const hlsUrl = message.data.settings.stream_data.assets.hls;
-                    if (Hls.isSupported()) {
-                        var hls = new Hls();
-                        hls.loadSource(hlsUrl);
-                        hls.attachMedia(videoElement);
-                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                            videoElement.play();
-                        });
-                    } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-                        videoElement.src = hlsUrl;
-                        videoElement.addEventListener('canplay', function() {
-                            videoElement.play();
-                        });
-                    }
+                    const playerUrl = message.data.settings.stream_data.assets.player;
+                    videoElement.src = playerUrl;
+                    videoElement.play();
                 } else if (message.data.action === 'stop') {
                     videoElement.src = "";
                 }
