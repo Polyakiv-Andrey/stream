@@ -84,7 +84,7 @@
             } else if (message.type === 'control') {
                 if (message.data.action === 'start') {
                     console.log('Stream Key:', message.data.settings.streamKey);
-                    videoElement.src = `https://cdn.api.video/vod/${message.data.settings.streamKey}/player`;
+                    videoElement.src = message.data.settings.stream_data.assets.hls;
                 } else if (message.data.action === 'stop') {
                     videoElement.src = "";
                 }

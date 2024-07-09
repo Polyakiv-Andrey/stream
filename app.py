@@ -130,7 +130,6 @@
 #             settings["streamKey"] = stream_key
 #             settings["stream_data"] = stream_data
 #             return {"type": "control", "data": {"action": "start", "settings": settings}}
-#
 #         else:
 #             return {"error": "Failed to start stream", "details": response.json()}
 #     except requests.exceptions.RequestException as e:
@@ -180,18 +179,10 @@
 #
 # @app.route('/streams', methods=['GET'])
 # def streams_page():
+#     global registered_devices
 #     try:
-#         response = requests.get(
-#             f'{API_VIDEO_BASE_URL}/live-streams',
-#             headers=headers,
-#             verify=False
-#         )
-#
-#         if response.status_code == 200:
-#             stream = response.json().get('liveStreams', [])
-#             return render_template('streams.html', streams=stream)
-#         else:
-#             return render_template('error.html', message="Failed to load streams")
+#         streams_list = [{"device_id": device_id} for device_id in registered_devices]
+#         return render_template('streams.html', streams=streams_list)
 #     except requests.exceptions.RequestException as e:
 #         return render_template('error.html', message=str(e))
 #
@@ -334,7 +325,7 @@ def start_stream(device_id, settings):
             print(f"Stream started: {stream_data}")
             settings["streamKey"] = stream_key
             settings["stream_data"] = stream_data
-            return {"type": "control", "data": {"action": "start", "settings": settings}}
+            return {"type": "control", "data": {"action": "start", "settings": {"resolution": settings.get("resolution"), "streamKey": stream_key, "stream_data": stream_data}}}
         else:
             return {"error": "Failed to start stream", "details": response.json()}
     except requests.exceptions.RequestException as e:
