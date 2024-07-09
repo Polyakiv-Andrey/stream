@@ -82,6 +82,12 @@
             if (message.type === 'video') {
                 videoElement.src = window.URL.createObjectURL(new Blob([message.data], { type: 'video/mp4' }));
             } else if (message.type === 'control') {
+                if (message.data.action === 'start') {
+                    console.log('Stream Key:', message.data.settings.streamKey);
+                    videoElement.src = `https://cdn.api.video/vod/${message.data.settings.streamKey}/player`;
+                } else if (message.data.action === 'stop') {
+                    videoElement.src = "";
+                }
                 console.log('Control message:', message.data);
             } else {
                 console.error('Unknown message type:', message.type);
