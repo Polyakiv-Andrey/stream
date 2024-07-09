@@ -127,7 +127,10 @@ def start_stream(device_id, settings):
             streams[device_id] = stream_data['liveStreamId']
             stream_key = stream_data['streamKey']
             print(f"Stream started: {stream_data}")
-            return {"type": "control", "data": {"action": "start", "settings": settings, "streamKey": stream_key}}
+            settings["streamKey"] = stream_key
+            # return {"type": "control", "data": {"action": "start", "settings": settings, "streamKey": stream_key}}
+            return {"type": "control", "data": {"action": "start", "settings": settings}}
+
         else:
             return {"error": "Failed to start stream", "details": response.json()}
     except requests.exceptions.RequestException as e:
