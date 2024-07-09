@@ -128,6 +128,7 @@ def start_stream(device_id, settings):
             stream_key = stream_data['streamKey']
             print(f"Stream started: {stream_data}")
             settings["streamKey"] = stream_key
+            settings["stream_data"] = stream_data
             # return {"type": "control", "data": {"action": "start", "settings": settings, "streamKey": stream_key}}
             return {"type": "control", "data": {"action": "start", "settings": settings}}
 
