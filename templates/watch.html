@@ -185,9 +185,7 @@
 <body>
     <h1>Watching Stream: {{ device_id }}</h1>
     <div class="video-container">
-        <video id="live-stream" controls autoplay>
-            Your browser does not support the video tag.
-        </video>
+        <iframe id="live-stream" width="100%" height="500px" frameborder="0" allowfullscreen></iframe>
     </div>
     <div class="controls">
         <button onclick="startStream()">Start Stream</button>
@@ -207,20 +205,17 @@
         };
 
         ws.onmessage = function(event) {
-            var videoElement = document.getElementById('live-stream');
+            var iframeElement = document.getElementById('live-stream');
             var message = JSON.parse(event.data);
             console.log('Received message:', message);
 
-            if (message.type === 'video') {
-                videoElement.src = window.URL.createObjectURL(new Blob([message.data], { type: 'video/mp4' }));
-            } else if (message.type === 'control') {
+            if (message.type === 'control') {
                 if (message.data.action === 'start') {
                     console.log('Stream Key:', message.data.settings.streamKey);
                     const playerUrl = message.data.settings.stream_data.assets.player;
-                    videoElement.src = playerUrl;
-                    videoElement.play();
+                    iframeElement.src = playerUrl;
                 } else if (message.data.action === 'stop') {
-                    videoElement.src = "";
+                    iframeElement.src = "";
                 }
                 console.log('Control message:', message.data);
             } else {
@@ -241,7 +236,7 @@
                 type: 'control',
                 data: {
                     action: action,
-                    ...settings
+                    settings: settings
                 }
             });
             console.log('Sending command:', message);
@@ -250,7 +245,7 @@
 
         function startStream() {
             const resolution = parseInt(document.getElementById('resolution-dropdown').value);
-            sendControlCommand('start', { settings: { resolution: resolution } });
+            sendControlCommand('start', { resolution: resolution });
         }
 
         function stopStream() {
@@ -264,3 +259,4 @@
     </script>
 </body>
 </html>
+
