@@ -1,3 +1,135 @@
+{#<!DOCTYPE html>#}
+{#<html>#}
+{#<head>#}
+{#    <title>Watch Stream</title>#}
+{#    <style>#}
+{#        body {#}
+{#            font-family: Arial, sans-serif;#}
+{#            display: flex;#}
+{#            flex-direction: column;#}
+{#            align-items: center;#}
+{#            padding: 20px;#}
+{#            background-color: #f4f4f4;#}
+{#        }#}
+{#        h1 {#}
+{#            color: #333;#}
+{#        }#}
+{#        .video-container {#}
+{#            width: 80%;#}
+{#            margin: 20px 0;#}
+{#        }#}
+{#        video {#}
+{#            width: 100%;#}
+{#            border: 1px solid #ccc;#}
+{#            border-radius: 8px;#}
+{#        }#}
+{#        .controls {#}
+{#            display: flex;#}
+{#            justify-content: space-between;#}
+{#            width: 80%;#}
+{#            margin-top: 10px;#}
+{#        }#}
+{#        button, select {#}
+{#            padding: 10px 20px;#}
+{#            margin: 5px;#}
+{#            border: none;#}
+{#            border-radius: 5px;#}
+{#            cursor: pointer;#}
+{#            font-size: 16px;#}
+{#        }#}
+{#        button {#}
+{#            background-color: #007bff;#}
+{#            color: white;#}
+{#        }#}
+{#        button:hover {#}
+{#            background-color: #0056b3;#}
+{#        }#}
+{#        select {#}
+{#            background-color: #fff;#}
+{#            border: 1px solid #ccc;#}
+{#        }#}
+{#    </style>#}
+{#</head>#}
+{#<body>#}
+{#    <h1>Watching Stream: {{ device_id }}</h1>#}
+{#    <div class="video-container">#}
+{#        <video id="live-stream" controls autoplay>#}
+{#            Your browser does not support the video tag.#}
+{#        </video>#}
+{#    </div>#}
+{#    <div class="controls">#}
+{#        <button onclick="startStream()">Start Stream</button>#}
+{#        <button onclick="stopStream()">Stop Stream</button>#}
+{#        <select id="resolution-dropdown" onchange="setResolution()">#}
+{#            <option value="480">480p</option>#}
+{#            <option value="720">720p</option>#}
+{#            <option value="1080">1080p</option>#}
+{#        </select>#}
+{#    </div>#}
+{#    <script>#}
+{#        var deviceId = "{{ device_id }}";#}
+{#        var ws = new WebSocket(`ws://${window.location.host}/${deviceId}`);#}
+{##}
+{#        ws.onopen = function() {#}
+{#            console.log('Connected to WebSocket');#}
+{#        };#}
+{##}
+{#        ws.onmessage = function(event) {#}
+{#            var videoElement = document.getElementById('live-stream');#}
+{#            var message = JSON.parse(event.data);#}
+{#            console.log('Received message:', message);#}
+{##}
+{#            if (message.type === 'video') {#}
+{#                videoElement.src = window.URL.createObjectURL(new Blob([message.data], { type: 'video/mp4' }));#}
+{#            } else if (message.type === 'control') {#}
+{#                if (message.data.action === 'start') {#}
+{#                    console.log('Stream Key:', message.data.settings.streamKey);#}
+{#                    videoElement.src = message.data.settings.stream_data.assets.hls;#}
+{#                } else if (message.data.action === 'stop') {#}
+{#                    videoElement.src = "";#}
+{#                }#}
+{#                console.log('Control message:', message.data);#}
+{#            } else {#}
+{#                console.error('Unknown message type:', message.type);#}
+{#            }#}
+{#        };#}
+{##}
+{#        ws.onerror = function(error) {#}
+{#            console.error('WebSocket error:', error);#}
+{#        };#}
+{##}
+{#        ws.onclose = function(event) {#}
+{#            console.log('WebSocket connection closed:', event);#}
+{#        };#}
+{##}
+{#        function sendControlCommand(action, settings = {}) {#}
+{#            const message = JSON.stringify({#}
+{#                type: 'control',#}
+{#                data: {#}
+{#                    action: action,#}
+{#                    ...settings#}
+{#                }#}
+{#            });#}
+{#            console.log('Sending command:', message);#}
+{#            ws.send(message);#}
+{#        }#}
+{##}
+{#        function startStream() {#}
+{#            const resolution = parseInt(document.getElementById('resolution-dropdown').value);#}
+{#            sendControlCommand('start', { settings: { resolution: resolution } });#}
+{#        }#}
+{##}
+{#        function stopStream() {#}
+{#            sendControlCommand('stop');#}
+{#        }#}
+{##}
+{#        function setResolution() {#}
+{#            const resolution = parseInt(document.getElementById('resolution-dropdown').value);#}
+{#            sendControlCommand('resolution', { value: resolution });#}
+{#        }#}
+{#    </script>#}
+{#</body>#}
+{#</html>#}
 <!DOCTYPE html>
 <html>
 <head>
@@ -66,6 +198,7 @@
             <option value="1080">1080p</option>
         </select>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         var deviceId = "{{ device_id }}";
         var ws = new WebSocket(`ws://${window.location.host}/${deviceId}`);
@@ -84,7 +217,20 @@
             } else if (message.type === 'control') {
                 if (message.data.action === 'start') {
                     console.log('Stream Key:', message.data.settings.streamKey);
-                    videoElement.src = message.data.settings.stream_data.assets.hls;
+                    const hlsUrl = message.data.settings.stream_data.assets.hls;
+                    if (Hls.isSupported()) {
+                        var hls = new Hls();
+                        hls.loadSource(hlsUrl);
+                        hls.attachMedia(videoElement);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            videoElement.play();
+                        });
+                    } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                        videoElement.src = hlsUrl;
+                        videoElement.addEventListener('canplay', function() {
+                            videoElement.play();
+                        });
+                    }
                 } else if (message.data.action === 'stop') {
                     videoElement.src = "";
                 }
