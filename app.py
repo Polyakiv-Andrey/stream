@@ -129,7 +129,7 @@
 #             print(f"Stream started: {stream_data}")
 #             settings["streamKey"] = stream_key
 #             settings["stream_data"] = stream_data
-#             return {"type": "control", "data": {"action": "start", "settings": settings}}
+#             return {"type": "control", "data": {"action": "start", "settings": {"resolution": settings.get("resolution"), "streamKey": stream_key, "stream_data": stream_data}}}
 #         else:
 #             return {"error": "Failed to start stream", "details": response.json()}
 #     except requests.exceptions.RequestException as e:
