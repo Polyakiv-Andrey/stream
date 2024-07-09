@@ -125,8 +125,9 @@ def start_stream(device_id, settings):
         if response.status_code == 201:
             stream_data = response.json()
             streams[device_id] = stream_data['liveStreamId']
+            stream_key = stream_data['streamKey']
             print(f"Stream started: {stream_data}")
-            return {"type": "control", "data": {"action": "start", "settings": settings}}
+            return {"type": "control", "data": {"action": "start", "settings": settings, "streamKey": stream_key}}
         else:
             return {"error": "Failed to start stream", "details": response.json()}
     except requests.exceptions.RequestException as e:
