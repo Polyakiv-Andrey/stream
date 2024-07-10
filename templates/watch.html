@@ -64,7 +64,78 @@
             <option value="1080">1080p</option>
         </select>
     </div>
-    <script>
+{#    <script>#}
+{#        var deviceId = "{{ device_id }}";#}
+{#        var ws = new WebSocket(`ws://${window.location.host}/${deviceId}`);#}
+{##}
+{#        ws.onopen = function() {#}
+{#            console.log('Connected to WebSocket');#}
+{#        };#}
+{##}
+{#        ws.onmessage = function(event) {#}
+{#            var iframeElement = document.getElementById('live-stream');#}
+{#            var message = JSON.parse(event.data);#}
+{#            console.log('Received message:', message);#}
+{##}
+{#            if (message.type === 'control') {#}
+{#                if (message.data.action === 'start') {#}
+{#                    console.log('Stream Key:', message.data.settings.streamKey);#}
+{#                    const playerUrl = message.data.settings.stream_data.assets.player;#}
+{#                    iframeElement.src = playerUrl;#}
+{#                } else if (message.data.action === 'stop') {#}
+{#                    iframeElement.src = "";#}
+{#                }#}
+{#                console.log('Control message:', message.data);#}
+{#            } else {#}
+{#                console.error('Unknown message type:', message.type);#}
+{#            }#}
+{#        };#}
+{##}
+{#        ws.onerror = function(error) {#}
+{#            console.error('WebSocket error:', error);#}
+{#        };#}
+{##}
+{#        ws.onclose = function(event) {#}
+{#            console.log('WebSocket connection closed:', event);#}
+{#        };#}
+{##}
+{#        function sendControlCommand(action, settings = {}) {#}
+{#            const message = JSON.stringify({#}
+{#                type: 'control',#}
+{#                data: {#}
+{#                    action: action,#}
+{#                    settings: settings#}
+{#                }#}
+{#            });#}
+{#            console.log('Sending command:', message);#}
+{#            ws.send(message);#}
+{#        }#}
+{##}
+{#        function startStream() {#}
+{#            const resolution = parseInt(document.getElementById('resolution-dropdown').value);#}
+{#            sendControlCommand('start', { resolution: resolution });#}
+{#        }#}
+{##}
+{#        function stopStream() {#}
+{#            sendControlCommand('stop');#}
+{#        }#}
+{##}
+{#        function setResolution() {#}
+{#          const resolution = parseInt(document.getElementById('resolution-dropdown').value, 10)#}
+{#          const message = JSON.stringify({#}
+{#              type: 'control',#}
+{#              data: {#}
+{#                  action: 'resolution',#}
+{#                  value: resolution#}
+{#              }#}
+{#          });#}
+{#          console.log('Sending resolution command:', message);#}
+{#          ws.send(message);#}
+{#      }#}
+{##}
+{#    </script>#}
+
+<script>
         var deviceId = "{{ device_id }}";
         var ws = new WebSocket(`ws://${window.location.host}/${deviceId}`);
 
@@ -121,25 +192,21 @@
         }
 
         function setResolution() {
-          const resolution = parseInt(document.getElementById('resolution-dropdown').value, 10)
-          const message = JSON.stringify({
-              type: 'control',
-              data: {
-                  action: 'resolution',
-                  value: resolution
-              }
-          });
-          console.log('Sending resolution command:', message);
-          ws.send(message);
-      }
+            const resolution = parseInt(document.getElementById('resolution-dropdown').value, 10);
+            const message = JSON.stringify({
+                type: 'control',
+                data: {
+                    action: 'resolution',
+                    value: resolution
+                }
+            });
+            console.log('Sending resolution command:', message);
+            ws.send(message);
+        }
+
+        document.getElementById('resolution-dropdown').addEventListener('change', setResolution);
 
     </script>
 </body>
 </html>
 
-
-
-{#function setResolution() {#}
-{#            const resolution = parseInt(document.getElementById('resolution-dropdown').value);#}
-{#            sendControlCommand('resolution', { value: resolution });#}
-{#        }#}
