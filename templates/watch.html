@@ -121,7 +121,7 @@
         }
 
         function setResolution() {
-          const resolution = document.getElementById('resolution-dropdown').value;
+          const resolution = parseInt(document.getElementById('resolution-dropdown').value, 10)
           const message = JSON.stringify({
               type: 'control',
               data: {
