@@ -163,6 +163,9 @@ def stop_stream(device_id):
 
 def set_resolution(device_id, resolution):
     try:
+        if resolution is None:
+            return {"error": "Resolution value is required"}
+
         message = {
             "type": "control",
             "data": {
