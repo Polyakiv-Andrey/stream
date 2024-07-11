@@ -311,6 +311,7 @@ def broadcast_to_device(device_id, message):
     if device_id in websockets:
         sent_to = []
         for ws in websockets[device_id]:
+            print(ws)
             if ws not in sent_to:
                 ws.send(message)
                 sent_to.append(ws)
@@ -386,7 +387,7 @@ def set_resolution(device_id, resolution):
                 "value": resolution
             }
         }
-        broadcast_to_device(device_id, json.dumps(message))
+        # broadcast_to_device(device_id, json.dumps(message))
         print(f"Resolution set to: {resolution}")
         return message
     except Exception as e:
