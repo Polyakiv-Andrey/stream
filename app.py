@@ -309,8 +309,11 @@ def websocket(ws, device_id):
 
 def broadcast_to_device(device_id, message):
     if device_id in websockets:
+        sent_to = []
         for ws in websockets[device_id]:
-            ws.send(message)
+            if ws not in sent_to:
+                ws.send(message)
+                sent_to.append(ws)
 
 
 def start_stream(device_id, settings):
