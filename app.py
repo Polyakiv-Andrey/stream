@@ -128,10 +128,11 @@ def start_stream(device_id, settings):
 
         if response.status_code == 201:
             stream_data = response.json()
-            # streams[device_id] = stream_data['liveStreamId']
             streams[device_id] = {
                 'liveStreamId': stream_data['liveStreamId'],
                 'thumbnail': stream_data['assets']['thumbnail'],
+                'player': stream_data['assets']['player'],
+                'streamKey': stream_data['streamKey']
             }
             stream_key = stream_data['streamKey']
             print(f"Stream started: {stream_data}")
