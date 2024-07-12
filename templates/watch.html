@@ -217,6 +217,7 @@
         var deviceId = "{{ device_id }}";
         var ws = new WebSocket(`ws://${window.location.host}/${deviceId}`);
         var iframeElement = document.getElementById('live-stream');
+        var fetchInterval;
 
         ws.onopen = function() {
             console.log('Connected to WebSocket');
@@ -232,6 +233,7 @@
                     console.log('Stream Key:', message.data.settings.streamKey);
                     const playerUrl = message.data.settings.stream_data.assets.player;
                     iframeElement.src = playerUrl;
+                    clearInterval(fetchInterval);  // Stop retrying once the stream is available
                 } else if (message.data.action === 'stop') {
                     iframeElement.src = "";
                 }
@@ -285,14 +287,28 @@
 
         function fetchStreamInfo() {
             fetch(`/stream-info/${deviceId}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data && data.player) {
                         iframeElement.src = data.player;
+                        clearInterval(fetchInterval);  // Stop retrying once the stream is available
+                    } else {
+                        console.log('Stream not started yet. Retrying...');
                     }
                 })
-                .catch(error => console.error('Error fetching stream info:', error));
+                .catch(error => {
+                    console.error('Error fetching stream info:', error);
+                    clearInterval(fetchInterval);  // Stop retrying in case of an error
+                });
         }
+
+        // Retry fetching stream information every 5 seconds
+        fetchInterval = setInterval(fetchStreamInfo, 5000);
     </script>
 </body>
 </html>
