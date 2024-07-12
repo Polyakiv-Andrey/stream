@@ -303,7 +303,7 @@
                 })
                 .catch(error => {
                     console.error('Error fetching stream info:', error);
-                    clearInterval(fetchInterval);  // Stop retrying in case of an error
+                    // Optionally retry fetching stream info
                 });
         }
 
