@@ -209,6 +209,15 @@ def streams_page():
         return render_template('error.html', message=str(e))
 
 
+@app.route('/stream-info/<device_id>', methods=['GET'])
+def stream_info(device_id):
+    if device_id in streams:
+        stream_data = streams[device_id]
+        return jsonify(stream_data), 200
+    else:
+        return jsonify({"error": "No stream found for this device"}), 404
+
+
 @app.route('/watch-stream/<device_id>', methods=['GET'])
 def watch_stream_page(device_id):
     return render_template('watch.html', device_id=device_id)
