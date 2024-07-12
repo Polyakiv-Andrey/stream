@@ -303,6 +303,7 @@
                 })
                 .catch(error => {
                     console.error('Error fetching stream info:', error);
+                    clearInterval(fetchInterval);  // Stop retrying in case of an error
                 });
         }
 
@@ -311,4 +312,3 @@
     </script>
 </body>
 </html>
-
